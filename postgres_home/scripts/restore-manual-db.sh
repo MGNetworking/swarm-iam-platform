@@ -62,6 +62,7 @@ log() {
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 # log en cas d'erreur
+# shellcheck disable=SC2154
 trap 'rc=$?; log ERROR "Échec (rc=$rc) à la ligne $LINENO"; exit $rc' ERR
 
 log INFO "=== START RESTORE DB (MANUAL) ==="

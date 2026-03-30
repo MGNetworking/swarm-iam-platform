@@ -55,6 +55,7 @@ log() {
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 # En cas d'erreur, log + exit code
+# shellcheck disable=SC2154
 trap 'rc=$?; log ERROR "Échec (rc=$rc) à la ligne $LINENO"; exit $rc' ERR
 
 log INFO "=== START BACKUP MANUEL POSTGRES ==="

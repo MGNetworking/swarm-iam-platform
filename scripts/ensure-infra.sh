@@ -38,6 +38,7 @@ fi
 
 set -a
 for CONF_FILE in "${ENV_FILES[@]}"; do
+  # shellcheck source=/dev/null
   source "$CONF_FILE"
 done
 set +a
@@ -165,7 +166,7 @@ ensure_overlay_network() {
 log "=== ENSURE INFRA (Swarm + réseaux overlay) ==="
 log "PROJECT_ROOT        : $PROJECT_ROOT"
 log "CONF_FILE           : $CONF_FILE"
-log "ENV_FILES           : $ENV_FILES"
+log "ENV_FILES           : ${ENV_FILES[*]}"
 log "LOG_DIR             : $LOG_DIR"
 log "LOG_FILE            : $LOG_FILE"
 log "OVERLAY_NETWORKS    : $OVERLAY_NETWORKS"

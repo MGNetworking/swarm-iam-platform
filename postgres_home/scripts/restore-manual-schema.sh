@@ -29,6 +29,7 @@ fi
 
 set -a
 for CONF_FILE in "${ENV_FILES[@]}"; do
+  # shellcheck source=/dev/null
   source "$CONF_FILE"
 done
 set +a
@@ -57,6 +58,7 @@ log() {
 # stdout + stderr -> console + fichier
 exec > >(tee -a "$LOG_FILE") 2>&1
 
+# shellcheck disable=SC2154
 trap 'rc=$?; log ERROR "Échec (rc=$rc) à la ligne $LINENO"; exit $rc' ERR
 
 log INFO "=== START RESTORE SCHEMA (MANUAL) ==="
