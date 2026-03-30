@@ -65,6 +65,7 @@ fi
 
 set -a
 for CONF_FILE in "${ENV_FILES[@]}"; do
+  # shellcheck source=/dev/null
   source "$CONF_FILE"
   echo "SOURCING: $CONF_FILE"
 done
@@ -202,7 +203,7 @@ log "LOG_FILE=$LOG_FILE"
 log "Configuration:"
 log "  PROJECT_ROOT          : $PROJECT_ROOT"
 log "  ENV_DIR               : $ENV_DIR"
-log "  ENV_FILES             : $ENV_FILES"
+log "  ENV_FILES             : ${ENV_FILES[*]}"
 log "  FORCE_DEPLOY          : $FORCE_DEPLOY"
 log "  NO_WAIT               : $NO_WAIT"
 log "  TRAEFIK_STACK_NAME    : $TRAEFIK_STACK_NAME"
