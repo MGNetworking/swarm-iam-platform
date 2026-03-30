@@ -1,6 +1,11 @@
-# Fichier concernant l'IDE
+# IDE
 .idea/
 lib
+
+# Fichiers locaux non commités
+OBJECTIVES.md
+
+# PostgreSQL
 postgres_home/init/*
 !postgres_home/init/.keep
 

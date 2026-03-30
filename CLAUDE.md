@@ -15,12 +15,12 @@ Infrastructure IaC Bash/Docker Swarm déployant une plateforme IAM complète (Ke
 
 ## Stack technique
 
-| Service | Version | Rôle |
-|---------|---------|------|
-| Traefik | v3.1 | Reverse proxy interne (port 9080) |
-| Keycloak | 26.0 | SSO / IAM (keycloak.backhole.ovh) |
+| Service    | Version   | Rôle                                            |
+| ---------- | --------- | ----------------------------------------------- |
+| Traefik    | v3.1      | Reverse proxy interne (port 9080)               |
+| Keycloak   | 26.0      | SSO / IAM (keycloak.backhole.ovh)               |
 | PostgreSQL | 17-alpine | Base de données (port 5400, alias dns-postgres) |
-| Redis | 7-alpine | Cache session (port 6379, 512mb max) |
+| Redis      | 7-alpine  | Cache session (port 6379, 512mb max)            |
 
 ---
 
@@ -68,6 +68,7 @@ secrets/
 ## Secrets Docker
 
 Créés manuellement sur le NAS, **jamais commités** :
+
 - `pg_password` — mot de passe PostgreSQL
 - `redis_password` — mot de passe Redis
 
@@ -83,6 +84,7 @@ Configurable via `LOG_DIR` dans `environments/homeLab/config.env`.
 ## Conventions de code
 
 ### Scripts Bash
+
 - Toujours commencer par `set -euo pipefail`
 - Résolution du `PROJECT_ROOT` via `SCRIPT_DIR` (portable, indépendant du cwd)
 - Logging avec timestamp via fonction `log()` → fichier + stdout
@@ -90,6 +92,7 @@ Configurable via `LOG_DIR` dans `environments/homeLab/config.env`.
 - Scripts **idempotents** — re-exécutables sans effets de bord
 
 ### Git / Conventional Commits
+
 - Format obligatoire : `type(scope): description`
 - Types : `feat`, `fix`, `chore`, `docs`, `ci`, `refactor`
 - Exemples : `feat(keycloak): add realm export`, `fix(backup): correct retention path`
@@ -97,6 +100,7 @@ Configurable via `LOG_DIR` dans `environments/homeLab/config.env`.
 - Merge vers `main` uniquement via PR
 
 ### Fichiers de config
+
 - Fins de ligne : **LF uniquement** (défini dans `.gitattributes`)
 - Encodage : UTF-8
 - Pas de secrets dans les fichiers commités
