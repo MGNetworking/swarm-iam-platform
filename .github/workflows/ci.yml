@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  shellcheck:
+    name: Shellcheck — lint scripts Bash
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Lint scripts .sh
+        run: |
+          find . -name "*.sh" -not -path "./.git/*" \
+            | xargs shellcheck --severity=warning
+
+  yamllint:
+    name: Yamllint — validation stacks Docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint fichiers YAML
+        run: |
+          find . -name "*.yml" -not -path "./.git/*" \
+            | xargs yamllint -d "{extends: relaxed, rules: {line-length: {max: 120}}}"
