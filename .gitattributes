@@ -1,8 +1,13 @@
-# Utiliser LF pour les fichiers déjà au format LF
-*.txt text eol=lf
-*.sh text eol=lf
-*.env text eol=lf
+# Normalisation des fins de ligne en LF
+*.txt      text eol=lf
+*.sh       text eol=lf
+*.env      text eol=lf
+*.yml      text eol=lf
+*.yaml     text eol=lf
+*.md       text eol=lf
+*.json     text eol=lf
+*.manifest text eol=lf
 
-# Exclure les images du traitement "text"
+# Fichiers binaires
 *.png -text
 *.jpg -text
