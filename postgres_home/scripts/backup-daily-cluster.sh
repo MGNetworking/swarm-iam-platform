@@ -41,6 +41,7 @@ mkdir -p "$LOG_DIR"
 log() { local level="$1"; shift; echo "$(date '+%Y-%m-%d %H:%M:%S') [$level] $*"; }
 
 exec > >(tee -a "$LOG_FILE") 2>&1
+# shellcheck disable=SC2154
 trap 'rc=$?; log ERROR "Échec (rc=$rc) à la ligne $LINENO"; exit $rc' ERR
 
 SERVICE="${PG_STACK_NAME}_postgres-shared"

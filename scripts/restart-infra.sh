@@ -31,6 +31,7 @@ fi
 
 set -a
 for CONF_FILE in "${ENV_FILES[@]}"; do
+  # shellcheck source=/dev/null
   source "$CONF_FILE"
 done
 set +a
@@ -184,7 +185,8 @@ wait_service_replicas_stable() {
 
 force_update_service() {
   local service="$1"
-  local stack_name="$(docker service ls --format '{{.Name}}' | grep -E "$service")"
+  local stack_name
+  stack_name="$(docker service ls --format '{{.Name}}' | grep -E "$service")"
   log_message "Force update: $stack_name"
   [[ -z "$stack_name" ]] && return 1
 
@@ -220,7 +222,7 @@ log_message "  Traefik              : $TRAEFIK_STACK_NAME"
 log_message "  Redis                : $REDIS_STACK_NAME"
 log_message "  PostgreSQL           : $PG_STACK_NAME"
 log_message "  Keycloak             : $KC_STACK_NAME"
-log_message "  ENV_FILES            : $ENV_FILES"
+log_message "  ENV_FILES            : ${ENV_FILES[*]}"
 log_message "  LOG_DIR              : $LOG_DIR"
 log_message " LOG_FILE              : $LOG_FILE"
 

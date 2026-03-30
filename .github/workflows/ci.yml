@@ -19,6 +19,7 @@ jobs:
       - name: Lint scripts .sh
         run: |
           find . -name "*.sh" -not -path "./.git/*" \
+            -not -name "wait-for-it.sh" \
             | xargs shellcheck --severity=warning
 
   yamllint:
