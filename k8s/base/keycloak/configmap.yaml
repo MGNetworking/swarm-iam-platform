@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-config
+  namespace: iam-system
+  labels:
+    app.kubernetes.io/name: keycloak
+    app.kubernetes.io/component: iam
+data:
+  # Hostname patché par overlay selon l'environnement
+  KEYCLOAK_HOSTNAME: keycloak.example.com

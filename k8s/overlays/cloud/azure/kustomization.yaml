@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Overlay Azure Kubernetes Service (AKS)
+# StorageClass : managed-csi (Azure Disk)
+
+bases:
+  - ../../../base
+
+patches:
+  - path: patches/postgresql-storage.yaml
+  - path: patches/redis-storage.yaml
+  - path: patches/keycloak-hostname.yaml

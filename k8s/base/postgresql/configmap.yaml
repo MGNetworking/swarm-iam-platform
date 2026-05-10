@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-config
+  namespace: iam-system
+  labels:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/component: database
+data:
+  DB_NAME: kc_db
+  USER_BD: admin

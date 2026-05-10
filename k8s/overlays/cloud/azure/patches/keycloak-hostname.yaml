@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-config
+data:
+  # Remplacer par le hostname Azure (ex: keycloak.region.cloudapp.azure.com)
+  KEYCLOAK_HOSTNAME: keycloak.example.azure.com

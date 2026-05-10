@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefik
+  namespace: iam-system
+  labels:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/component: ingress-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: traefik
+        app.kubernetes.io/component: ingress-controller
+    spec:
+      serviceAccountName: traefik
+      containers:
+        - name: traefik
+          image: traefik:v3.1
+          args:
+            - --providers.kubernetesingress=true
+            - --entrypoints.web.address=:80
+            - --entrypoints.websecure.address=:443
+            - --log.level=INFO
+            - --accesslog=true
+            - --api.dashboard=false
+          ports:
+            - name: web
+              containerPort: 80
+            - name: websecure
+              containerPort: 443
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: web
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: web
+            initialDelaySeconds: 10
+            periodSeconds: 30

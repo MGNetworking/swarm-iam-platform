@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-config
+data:
+  # Remplacer par le hostname AWS (ex: keycloak.elb.eu-west-1.amazonaws.com)
+  KEYCLOAK_HOSTNAME: keycloak.example.aws.com

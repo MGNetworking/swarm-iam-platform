@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: iam-system
+spec:
+  template:
+    spec:
+      containers:
+        - name: keycloak
+          args: ["start-dev"]
+          env:
+            - name: KC_HOSTNAME_STRICT_HTTPS
+              value: "false"
