@@ -74,10 +74,8 @@ scripts/                       # Scripts d'orchestration (kubectl)
   reset-infra.sh               # Réinitialisation destructive (namespace delete)
   ensure-infra.sh              # Vérifie k3s + kubectl + namespace iam-system
   ensure-backup-dirs.sh        # Crée les répertoires de backup sur l'hôte
-  wait-for-it.sh               # Attente service TCP (script tiers, non modifié)
 
 postgres_home/scripts/         # Scripts PostgreSQL (via kubectl exec)
-  backup-daily-cluster.sh      # Backup quotidien cluster (rétention 30j)
   backup-manual.sh             # Backup manuel interactif (base ou schéma)
   restore-daily-cluster.sh     # Restauration depuis backup cluster
   restore-manual-db.sh         # Restauration base complète

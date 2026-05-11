@@ -255,13 +255,12 @@ sudo kubectl get secrets -n iam-system
 
 ## Sauvegardes PostgreSQL
 
-```bash
-# Backup quotidien (à planifier via cron)
-./postgres_home/scripts/backup-daily-cluster.sh
+Le backup quotidien est géré par un **CronJob Kubernetes** dans le cluster (overlay linux-server).
+Pour l'environnement local-dev, utiliser le backup manuel :
 
+```bash
 # Backup manuel interactif
 ./postgres_home/scripts/backup-manual.sh
 ```
 
-Les backups sont stockés dans `postgres_home/backups/`.
-Voir [Scripts — Aide-mémoire](../reference/scripts-cheatsheet.md) pour les commandes de restauration.
+Les backups manuels sont stockés dans `postgres_home/backups/manual/`.

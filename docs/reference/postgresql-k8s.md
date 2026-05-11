@@ -231,8 +231,8 @@ Pod postgresql-0 (pg_dump)  →  stdout  →  kubectl exec pipe  →  gzip  → 
 Le dossier `backups/` reste donc le répertoire de sortie des dumps sur ta machine (ou sur le serveur VPS si les scripts y tournent). Les sous-dossiers sont créés automatiquement :
 
 ```
+/var/backups/postgresql/       ← CronJob k8s postgresql-backup (1 fichier .sql.gz par jour, hostPath VPS)
 postgres_home/backups/
-  daily/cluster/    ← backup-daily-cluster.sh (1 fichier .sql.gz par jour, rétention 30j)
   manual/BD/        ← backup-manual.sh mode "base complète"
   manual/schema/    ← backup-manual.sh mode "schéma uniquement"
 ```
@@ -245,10 +245,10 @@ En Docker Swarm, ce dossier était probablement monté comme volume dans le cont
 
 ### scripts/ — tous migrés vers kubectl
 
-| Script                     | Mécanisme                               |
-| -------------------------- | --------------------------------------- |
-| `backup-daily-cluster.sh`  | `kubectl exec` + `pg_dumpall`           |
-| `backup-manual.sh`         | `kubectl exec` + `pg_dump`              |
+| Script / Objet k8s              | Mécanisme                               |
+| ------------------------------- | --------------------------------------- |
+| CronJob `postgresql-backup`     | pod éphémère + `pg_dumpall` → hostPath  |
+| `backup-manual.sh`              | `kubectl exec` + `pg_dump`              |
 | `restore-daily-cluster.sh` | `kubectl exec` + `kubectl scale`        |
 | `restore-manual-db.sh`     | `kubectl exec` + `kubectl scale`        |
 | `restore-manual-schema.sh` | `kubectl exec` + `kubectl scale`        |
@@ -259,21 +259,30 @@ Tous les scripts acceptent `--env <linux-server|cloud/azure|cloud/aws>`.
 
 ## Comment fonctionne un backup (après migration)
 
-### Backup quotidien automatique
+### Backup quotidien automatique — CronJob Kubernetes
+
+Le backup quotidien est géré par le CronJob `postgresql-backup` déployé dans le cluster
+(overlay linux-server). Il tourne à 2h du matin sans aucune intervention manuelle.
 
 ```bash
-./postgres_home/scripts/backup-daily-cluster.sh
-# ou avec un environnement spécifique
-INFRA_ENV=linux-server ./postgres_home/scripts/backup-daily-cluster.sh
+# Vérifier l'état du CronJob
+kubectl get cronjob -n iam-system
+
+# Voir les logs du dernier backup
+kubectl logs -n iam-system -l app.kubernetes.io/name=postgresql-backup --tail=20
+
+# Lister les backups produits (linux-server)
+ls /var/backups/postgresql/
 ```
 
-Ce que fait le script :
+Ce que fait le CronJob :
 
-1. Charge `environments/linux-server/.env` et `config.env`
-2. Trouve le pod PostgreSQL via son label : `kubectl get pod -l app.kubernetes.io/name=postgresql`
-3. Lance `pg_dumpall` dans le pod : `kubectl exec <pod> -- pg_dumpall ...`
-4. Compresse le flux (`gzip -9`) et l'écrit dans `postgres_home/backups/daily/cluster/CLUSTER-YYYY-MM-DD.sql.gz`
-5. Purge les fichiers de plus de 30 jours (`PG_BACKUP_KEEP_DAYS` dans config.env)
+1. Crée un pod éphémère (`postgres:17-alpine`) dans le namespace `iam-system`
+2. Se connecte à PostgreSQL via le Service DNS interne `postgresql:5432`
+3. Lance `pg_dumpall` avec les credentials injectés depuis le ConfigMap et le Secret
+4. Compresse le flux (`gzip -9`) et écrit dans `/var/backups/postgresql/CLUSTER-YYYY-MM-DD.sql.gz`
+5. Purge les fichiers de plus de 30 jours
+6. Se termine et disparaît (pod éphémère)
 
 Le fichier produit contient **toutes les bases** du cluster PostgreSQL (sauf les rôles système, option `--no-roles`).
 
