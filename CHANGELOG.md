@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.0.1](https://github.com/MGNetworking/swarm-iam-platform/compare/v4.0.0...v4.0.1) (2026-05-11)
+
+
+### Miscellaneous
+
+* **project:** add MIT license, CODEOWNERS and wiki auto-sync ([c8e0c51](https://github.com/MGNetworking/swarm-iam-platform/commit/c8e0c51fd52d3b9e0cc72abe1c9aebd67841eb6c))
+* **project:** add MIT license, CODEOWNERS and wiki sync ([#98](https://github.com/MGNetworking/swarm-iam-platform/issues/98)) ([c8e0c51](https://github.com/MGNetworking/swarm-iam-platform/commit/c8e0c51fd52d3b9e0cc72abe1c9aebd67841eb6c))
+
 ## [4.0.0](https://github.com/MGNetworking/swarm-iam-platform/compare/v3.0.1...v4.0.0) (2026-05-11)
 
 
