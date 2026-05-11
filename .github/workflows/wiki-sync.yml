@@ -1,0 +1,42 @@
+name: Wiki Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+
+permissions:
+  contents: write
+
+jobs:
+  wiki-sync:
+    name: Sync docs to GitHub Wiki
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone wiki
+        run: |
+          git clone \
+            "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.wiki.git" \
+            /tmp/wiki
+
+      - name: Sync docs to wiki
+        run: |
+          # Copier tout le contenu de docs/ dans le wiki
+          cp -r docs/. /tmp/wiki/
+
+          # La page d'accueil du wiki = README du projet
+          cp README.md /tmp/wiki/Home.md
+
+      - name: Commit and push
+        run: |
+          cd /tmp/wiki
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git diff --staged --quiet && echo "Aucun changement à synchroniser." && exit 0
+          git commit -m "docs: sync from docs/ (${GITHUB_SHA::8})"
+          git push
