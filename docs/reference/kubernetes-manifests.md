@@ -13,6 +13,7 @@
 - [Dépendances croisées entre services](#dépendances-croisées-entre-services)
 - [Ce que les overlays patchent](#ce-que-les-overlays-patchent)
 - [Ordre de création au déploiement](#ordre-de-création-au-déploiement)
+- [CronJob — postgresql-backup](#cronjob--postgresql-backup)
 
 ---
 
@@ -364,4 +365,86 @@ K8s crée les objets dans cet ordre logique :
 5. Deployment Keycloak       (attend : Service postgresql + Service redis + Secrets)
       ↓
 6. Ingress keycloak          (attend : Service keycloak + IngressClass traefik)
+7. CronJob postgresql-backup (attend : ConfigMap postgresql-config + Secret pg-password)
+```
+
+---
+
+## CronJob — postgresql-backup
+
+### Rôle
+
+Le CronJob `postgresql-backup` est un objet Kubernetes de type `batch/v1` qui remplace
+le cron système pour les sauvegardes PostgreSQL. Il tourne entièrement dans le cluster,
+sans aucune dépendance sur la machine opérateur.
+
+```
+k8s/overlays/linux-server/
+  └── postgresql-backup-cronjob.yaml   ← overlay linux-server uniquement (Step 1)
+```
+
+### Fonctionnement
+
+À chaque déclenchement (planifié ou manuel), Kubernetes crée un **pod éphémère** qui :
+1. Se connecte à PostgreSQL via le Service DNS interne `postgresql:5432`
+2. Exécute `pg_dumpall` avec les credentials injectés depuis le ConfigMap et le Secret
+3. Compresse le dump avec `gzip -9`
+4. Écrit le fichier dans `/backups/CLUSTER-YYYY-MM-DD.sql.gz`
+5. Purge les fichiers de plus de 30 jours
+6. Se termine et disparaît (pod éphémère)
+
+```mermaid
+flowchart LR
+  SCHED["⏰ Scheduler k8s\n0 2 * * *"]
+  POD["Pod éphémère\npostgres:17-alpine\n(créé puis supprimé)"]
+  PG["StatefulSet\npostgresql"]
+  HP["💾 /var/backups/postgresql/\nhostPath — disque VPS"]
+
+  SCHED -->|"crée"| POD
+  PG -->|"pg_dumpall\nDNS: postgresql:5432"| POD
+  POD -->|"gzip -9\nmount /backups"| HP
+```
+
+### Variables injectées
+
+| Variable | Source | Valeur |
+|---|---|---|
+| `POSTGRES_USER` | ConfigMap `postgresql-config` clé `USER_BD` | `admin` |
+| `POSTGRES_PASSWORD` | Secret `pg-password` clé `password` | (secret) |
+| `KEEP_DAYS` | Valeur en dur dans le manifest | `30` |
+
+### Volume hostPath
+
+Le CronJob utilise un `hostPath` — un montage direct du répertoire `/var/backups/postgresql`
+du nœud hôte dans le pod.
+
+```yaml
+volumes:
+  - name: backups
+    hostPath:
+      path: /var/backups/postgresql
+      type: DirectoryOrCreate   # crée le dossier s'il n'existe pas
+```
+
+**Pourquoi `hostPath` et pas un PVC ?**
+Sur k3s en single-node, le hostPath est équivalent à un PVC local mais avec un avantage :
+le chemin `/var/backups/postgresql` est directement accessible sur le disque du VPS.
+L'opérateur peut lire les fichiers sans `kubectl cp`.
+
+**Limite :** incompatible avec les clusters multi-nœuds (AKS, EKS) car le pod peut atterrir
+sur n'importe quel nœud. Pour le cloud, la Step 2 utilise un stockage objet externe
+(Azure Blob Storage / AWS S3).
+
+### Déclencher un backup manuel immédiat
+
+```bash
+kubectl create job --from=cronjob/postgresql-backup backup-manual-$(date +%Y%m%d%H%M) -n iam-system
+```
+
+### Vérifier le dernier backup
+
+```bash
+kubectl get jobs -n iam-system
+kubectl logs -n iam-system -l app.kubernetes.io/name=postgresql-backup --tail=20
+ls -lh /var/backups/postgresql/
 ```

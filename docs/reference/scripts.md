@@ -8,6 +8,7 @@ postgres_home/scripts/    ← Opérations PostgreSQL (backup, restore via kubect
 ```
 
 Ces deux familles ne s'appellent pas entre elles. Chacune a son périmètre :
+
 - `scripts/` → parle à **Kubernetes** (kubectl)
 - `postgres_home/scripts/` → parle à **PostgreSQL** (via kubectl exec dans le pod)
 
@@ -22,7 +23,7 @@ Ces deux familles ne s'appellent pas entre elles. Chacune a son périmètre :
   - [Mise à jour / redéploiement](#mise-à-jour-redéploiement)
   - [Redémarrer tous les services](#redémarrer-tous-les-services)
   - [Réinitialisation](#réinitialisation)
-  - [Backup quotidien (à planifier via cron)](#backup-quotidien-à-planifier-via-cron)
+  - [Backup quotidien (à planifier via cron)](#backup-quotidien--cronjob-kubernetes)
   - [Backup manuel](#backup-manuel)
   - [Restauration depuis un backup daily](#restauration-depuis-un-backup-daily)
   - [Restauration d'une base unique](#restauration-dune-base-unique)
@@ -42,32 +43,30 @@ Ces deux familles ne s'appellent pas entre elles. Chacune a son périmètre :
 
 ---
 
-
 ## Tableau récapitulatif
 
-| Script | Ce qu'il fait | Quand l'utiliser | Dangereux ? |
-|---|---|---|---|
-| `ensure-infra.sh` | Vérifie k3s + cluster + namespace | Avant tout déploiement | Non |
-| `deploy-infra.sh` | Déploie ou met à jour toute la stack | Premier déploiement, mise à jour | Non (idempotent) |
-| `restart-infra.sh` | Redémarre les pods un par un | Après un changement de secret | Non (progressif) |
-| `reset-infra.sh` | Supprime tout le namespace | Repartir de zéro | **OUI — irréversible** |
-| `ensure-backup-dirs.sh` | Crée les dossiers de backup | Appelé par deploy | Non |
-| `backup-daily-cluster.sh` | Dump complet de toutes les bases | Cron quotidien | Non |
-| `backup-manual.sh` | Dump interactif d'une base | Avant une migration | Non |
-| `restore-daily-cluster.sh` | Restaure depuis backup daily | Restauration complète | **Oui** — écrase les données |
-| `restore-manual-db.sh` | Restaure une base complète | Restauration ciblée | **Oui** — écrase la base |
-| `restore-manual-schema.sh` | Restaure la structure uniquement | Corriger une migration | **Oui** — perte des données |
+| Script                     | Ce qu'il fait                          | Quand l'utiliser                 | Dangereux ?                  |
+| -------------------------- | -------------------------------------- | -------------------------------- | ---------------------------- |
+| `ensure-infra.sh`          | Vérifie k3s + cluster + namespace      | Avant tout déploiement           | Non                          |
+| `deploy-infra.sh`          | Déploie ou met à jour toute la stack   | Premier déploiement, mise à jour | Non (idempotent)             |
+| `restart-infra.sh`         | Redémarre les pods un par un           | Après un changement de secret    | Non (progressif)             |
+| `reset-infra.sh`           | Supprime tout le namespace             | Repartir de zéro                 | **OUI — irréversible**       |
+| `ensure-backup-dirs.sh`    | Crée les dossiers de backup sur l'hôte | Avant le premier déploiement     | Non                          |
+| `backup-manual.sh`         | Dump interactif d'une base             | Avant une migration risquée      | Non                          |
+| `restore-daily-cluster.sh` | Restaure depuis backup daily           | Restauration complète            | **Oui** — écrase les données |
+| `restore-manual-db.sh`     | Restaure une base complète             | Restauration ciblée              | **Oui** — écrase la base     |
+| `restore-manual-schema.sh` | Restaure la structure uniquement       | Corriger une migration           | **Oui** — perte des données  |
 
 ---
 
 ## Environnements disponibles
 
-| Valeur `--env` | Cible | Cluster |
-|---|---|---|
-| `local-dev` | WSL2 (tests locaux) | k3s single-node |
+| Valeur `--env` | Cible                          | Cluster         |
+| -------------- | ------------------------------ | --------------- |
+| `local-dev`    | WSL2 (tests locaux)            | k3s single-node |
 | `linux-server` | VPS bare metal (Hetzner, OVH…) | k3s single-node |
-| `cloud/azure` | Azure Kubernetes Service | AKS |
-| `cloud/aws` | Elastic Kubernetes Service | EKS |
+| `cloud/azure`  | Azure Kubernetes Service       | AKS             |
+| `cloud/aws`    | Elastic Kubernetes Service     | EKS             |
 
 > Tous les scripts du projet acceptent `--env`. Remplace `linux-server` par ta cible.
 
@@ -126,21 +125,30 @@ Après un reset, relancer un déploiement complet :
 ./scripts/deploy-infra.sh --env linux-server
 ```
 
-### Backup quotidien (à planifier via cron)
+### Backup quotidien — CronJob Kubernetes
+
+Le backup quotidien est géré par un **CronJob Kubernetes** déployé dans le cluster.
+Il n'y a rien à planifier manuellement dans `crontab`.
 
 ```bash
-./postgres_home/scripts/backup-daily-cluster.sh
-# ou explicitement :
-INFRA_ENV=linux-server ./postgres_home/scripts/backup-daily-cluster.sh
+# Vérifier que le CronJob est actif
+kubectl get cronjob -n iam-system
+
+# Voir l'historique des jobs exécutés
+kubectl get jobs -n iam-system
+
+# Logs du dernier backup
+kubectl logs -n iam-system -l app.kubernetes.io/name=postgresql-backup --tail=30
 ```
 
-Fichier produit : `postgres_home/backups/daily/cluster/CLUSTER-YYYY-MM-DD.sql.gz`
-Rétention : 30 jours (configurable via `PG_BACKUP_KEEP_DAYS` dans `config.env`)
+| Environnement  | Stockage des backups                     | Outil                    |
+| -------------- | ---------------------------------------- | ------------------------ |
+| `linux-server` | `/var/backups/postgresql/` (disque VPS)  | hostPath k8s             |
+| `cloud/azure`  | Azure Blob Storage _(Step 2 — planifié)_ | `az storage blob upload` |
+| `cloud/aws`    | AWS S3 Bucket _(Step 2 — planifié)_      | `aws s3 sync`            |
 
-Exemple de cron (2h du matin chaque jour) :
-```
-0 2 * * * /chemin/absolu/vers/projet/postgres_home/scripts/backup-daily-cluster.sh
-```
+Rétention : 30 jours (variable `KEEP_DAYS` dans le CronJob).  
+Voir [docs/environments/linux-server.md](../environments/linux-server.md) pour la procédure complète.
 
 ### Backup manuel
 
@@ -149,17 +157,21 @@ Exemple de cron (2h du matin chaque jour) :
 ```
 
 Le script te demande quelle base sauvegarder et quel mode :
+
 - **Base complète** → `postgres_home/backups/manual/BD/`
 - **Schéma uniquement** → `postgres_home/backups/manual/schema/`
 
 ### Restauration depuis un backup daily
 
 ```bash
-ls postgres_home/backups/daily/cluster/
+# Lister les backups disponibles (linux-server)
+ls /var/backups/postgresql/
+
+# Restaurer
 ./postgres_home/scripts/restore-daily-cluster.sh --env linux-server CLUSTER-2025-12-28.sql.gz
 ```
 
-Le script arrête Keycloak, restaure toutes les bases, relance Keycloak.
+Le script arrête Keycloak, restaure toutes les bases depuis `/var/backups/postgresql/`, relance Keycloak.
 
 ### Restauration d'une base unique
 
@@ -379,6 +391,7 @@ die() { log "ERREUR: $*"; exit 1; }
 ### Les deux fichiers de configuration
 
 **`.env`** — variables runtime (ce qui est déployé) :
+
 ```bash
 NAMESPACE=iam-system
 KEYCLOAK_HOSTNAME=keycloak.example.com
@@ -386,6 +399,7 @@ DB_NAME=kc_db
 ```
 
 **`config.env`** — comportement des scripts :
+
 ```bash
 MAX_WAIT=300
 K8S_OVERLAY=k8s/overlays/linux-server

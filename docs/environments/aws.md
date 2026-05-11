@@ -22,6 +22,7 @@ Déploiement de la stack IAM sur Amazon Elastic Kubernetes Service (EKS).
 - [StorageClass AWS](#storageclass-aws)
 - [Opérations courantes](#opérations-courantes)
 - [Réinitialisation](#réinitialisation)
+- [Sauvegardes PostgreSQL](#sauvegardes-postgresql)
 - [Supprimer le cluster EKS](#supprimer-le-cluster-eks)
 
 ---
@@ -269,6 +270,41 @@ kubectl logs -n iam-system deployment/keycloak -f
 ./scripts/reset-infra.sh --env cloud/aws
 # → Recréer les secrets (voir étape 6) puis redéployer
 ```
+
+---
+
+## Sauvegardes PostgreSQL
+
+### Contexte EKS — pourquoi pas hostPath ?
+
+Sur EKS, le cluster est multi-nœuds. Un `hostPath` monterait le répertoire d'un nœud
+**aléatoire** à chaque exécution du CronJob : les fichiers seraient dispersés sur plusieurs
+instances EC2 et impossibles à retrouver. Cette approche est donc incompatible avec EKS.
+
+### Step 2 — AWS S3 (planifiée)
+
+Le CronJob de backup sera étendu pour écrire directement dans un **bucket AWS S3** via
+`aws s3 sync`. Le stockage S3 est redondant, versionnant (avec lifecycle policies) et
+accessible indépendamment du cycle de vie du cluster.
+
+```mermaid
+flowchart LR
+  PG["StatefulSet\npostgresql"]
+  CJ["CronJob\npostgresql-backup\n⏰ 2h du matin"]
+  S3["☁️ AWS S3 Bucket\nredondant — off-site\nCLUSTER-YYYY-MM-DD.sql.gz"]
+
+  PG -->|"pg_dumpall\nDNS interne: postgresql:5432"| CJ
+  CJ -->|"aws s3 sync\ngzip -9"| S3
+```
+
+**Ce qu'il faudra implémenter :**
+- Créer un bucket S3 dédié aux backups avec versioning activé
+- Créer un IAM Role avec permissions `s3:PutObject` sur ce bucket
+- Associer le Role au ServiceAccount du CronJob (IRSA — IAM Roles for Service Accounts)
+- Étendre le CronJob pour uploader via `aws s3 sync`
+- Configurer une lifecycle policy S3 pour la rétention (ex: 30 jours)
+
+Cette étape sera implémentée dans une PR dédiée.
 
 ---
 

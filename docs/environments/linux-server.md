@@ -26,6 +26,11 @@ avec k3s en mode single-node.
   - [Reset en conservant les données (recommandé)](#reset-en-conservant-les-données-recommandé)
   - [Reset complet (supprime toutes les données)](#reset-complet-supprime-toutes-les-données)
 - [Sauvegardes PostgreSQL](#sauvegardes-postgresql)
+  - [Architecture Step 1 — CronJob k8s (implémentée)](#architecture--step-1--cronjob-k8s-implémentée)
+  - [Backup manuel ponctuel](#backup-manuel-ponctuel)
+  - [Restauration depuis un backup daily](#restauration-depuis-un-backup-daily)
+  - [Restauration d'une base unique](#restauration-dune-base-unique)
+  - [Architecture Step 2 — off-site (planifiée)](#architecture--step-2--off-site-planifiée)
 
 ---
 
@@ -286,21 +291,103 @@ kubectl get secrets -n iam-system
 
 ## Sauvegardes PostgreSQL
 
-```bash
-# Backup quotidien (à planifier via cron)
-./postgres_home/scripts/backup-daily-cluster.sh
+### Architecture — Step 1 — CronJob k8s (implémentée)
 
-# Backup manuel interactif
+Les sauvegardes quotidiennes sont gérées par un **CronJob Kubernetes** qui tourne directement
+dans le cluster à 2h du matin. Rien à configurer dans `crontab` sur le serveur.
+
+```mermaid
+flowchart LR
+  PG["StatefulSet\npostgresql"]
+  CJ["CronJob\npostgresql-backup\n⏰ 2h du matin"]
+  HP["💾 /var/backups/postgresql/\ndisque VPS — hostPath\nCLUSTER-YYYY-MM-DD.sql.gz"]
+
+  PG -->|"pg_dumpall\nDNS interne: postgresql:5432"| CJ
+  CJ -->|"gzip -9\npurge > 30 jours"| HP
+```
+
+**Pourquoi `hostPath` sur un VPS k3s ?**
+k3s tourne sur un seul nœud. Le `hostPath` monte directement `/var/backups/postgresql` du
+serveur dans le pod éphémère. Les fichiers `.sql.gz` sont donc accessibles directement sur le
+disque du VPS, sans passer par `kubectl cp`.
+
+**Prérequis : créer les répertoires avant le premier déploiement**
+
+```bash
+./scripts/ensure-backup-dirs.sh --env linux-server
+```
+
+Crée `/var/backups/postgresql` (hostPath CronJob) et `postgres_home/backups/manual/` (backups manuels).
+
+**Vérifier que le CronJob est actif**
+
+```bash
+# Statut du CronJob
+kubectl get cronjob -n iam-system
+
+# Historique des jobs exécutés
+kubectl get jobs -n iam-system
+
+# Logs du dernier backup
+kubectl logs -n iam-system -l app.kubernetes.io/name=postgresql-backup --tail=30
+```
+
+**Lister les backups disponibles**
+
+```bash
+ls -lh /var/backups/postgresql/
+# CLUSTER-2026-05-11.sql.gz   2.1M
+# CLUSTER-2026-05-10.sql.gz   2.1M
+```
+
+---
+
+### Backup manuel ponctuel
+
+Pour un backup immédiat avant une migration ou une opération risquée :
+
+```bash
 ./postgres_home/scripts/backup-manual.sh
 ```
 
-Planifier via cron (2h du matin) :
+Script interactif : choisir le type (base complète ou schéma uniquement) et la base cible.
+Les fichiers atterrissent dans `postgres_home/backups/manual/`.
+
+---
+
+### Restauration depuis un backup daily
 
 ```bash
-crontab -e
-# Ajouter :
-0 2 * * * /chemin/absolu/vers/projet/postgres_home/scripts/backup-daily-cluster.sh
+./postgres_home/scripts/restore-daily-cluster.sh --env linux-server CLUSTER-2026-05-10.sql.gz
 ```
 
-Les backups sont stockés dans `postgres_home/backups/`.  
-Voir [Scripts — Aide-mémoire](../scripts-cheatsheet.md) pour les commandes de restauration.
+Le script cherche le fichier dans `/var/backups/postgresql/` (disque VPS).
+
+> **ATTENTION — opération destructive :** arrête Keycloak, écrase toutes les bases, relance Keycloak.
+> Une confirmation interactive est demandée avant l'exécution.
+
+---
+
+### Restauration d'une base unique
+
+```bash
+./postgres_home/scripts/restore-manual-db.sh --env linux-server kc_db-2026-05-10_020000.sql.gz
+```
+
+---
+
+### Architecture — Step 2 — off-site (planifiée)
+
+Les backups sur le disque VPS ne protègent pas contre la perte du serveur lui-même.
+La prochaine étape est une synchronisation automatique vers un stockage externe indépendant.
+
+```mermaid
+flowchart LR
+  HP["💾 /var/backups/postgresql/\ndisque VPS"]
+  RC["rclone sync\ncron quotidien"]
+  OFF["☁️ Stockage off-site\nS3 / Backblaze B2\nOVH Object Storage"]
+
+  HP --> RC --> OFF
+```
+
+Cette étape sera implémentée dans une PR dédiée.

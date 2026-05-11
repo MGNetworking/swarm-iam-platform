@@ -19,6 +19,7 @@ Déploiement de la stack IAM sur Azure Kubernetes Service (AKS).
 - [StorageClass Azure](#storageclass-azure)
 - [Opérations courantes](#opérations-courantes)
 - [Réinitialisation](#réinitialisation)
+- [Sauvegardes PostgreSQL](#sauvegardes-postgresql)
 - [Supprimer le cluster AKS](#supprimer-le-cluster-aks)
 
 ---
@@ -237,6 +238,40 @@ kubectl logs -n iam-system deployment/keycloak -f
 ./scripts/reset-infra.sh --env cloud/azure
 # → Recréer les secrets (voir étape 5) puis redéployer
 ```
+
+---
+
+## Sauvegardes PostgreSQL
+
+### Contexte AKS — pourquoi pas hostPath ?
+
+Sur AKS, le cluster est multi-nœuds. Un `hostPath` monterait le répertoire d'un nœud
+**aléatoire** à chaque exécution du CronJob : les fichiers seraient dispersés sur plusieurs
+machines et impossibles à retrouver. Cette approche est donc incompatible avec AKS.
+
+### Step 2 — Azure Blob Storage (planifiée)
+
+Le CronJob de backup sera étendu pour écrire directement dans **Azure Blob Storage** via
+`az storage blob upload`. Le stockage managé Azure est redondant, versionnant et accessible
+indépendamment du cycle de vie du cluster.
+
+```mermaid
+flowchart LR
+  PG["StatefulSet\npostgresql"]
+  CJ["CronJob\npostgresql-backup\n⏰ 2h du matin"]
+  AZ["☁️ Azure Blob Storage\nredondant — off-site\nCLUSTER-YYYY-MM-DD.sql.gz"]
+
+  PG -->|"pg_dumpall\nDNS interne: postgresql:5432"| CJ
+  CJ -->|"az storage blob upload\ngzip -9"| AZ
+```
+
+**Ce qu'il faudra implémenter :**
+- Créer un Storage Account et un container Blob dédié aux backups
+- Ajouter les credentials Azure dans un Secret Kubernetes (`az-backup-credentials`)
+- Étendre le CronJob pour uploader via `az storage blob upload`
+- Configurer la rétention (lifecycle policy Blob Storage)
+
+Cette étape sera implémentée dans une PR dédiée.
 
 ---
 
