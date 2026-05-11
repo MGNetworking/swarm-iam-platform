@@ -1,5 +1,13 @@
 # Changelog
 
+## [4.0.3](https://github.com/MGNetworking/swarm-iam-platform/compare/v4.0.2...v4.0.3) (2026-05-11)
+
+
+### Bug Fixes
+
+* **ci:** exclude k8s-course from wiki sync ([#104](https://github.com/MGNetworking/swarm-iam-platform/issues/104)) ([3710367](https://github.com/MGNetworking/swarm-iam-platform/commit/371036716d4575818c1bf0abf4e7938cc515aedb))
+* **ci:** improve wiki-sync workflow ([3710367](https://github.com/MGNetworking/swarm-iam-platform/commit/371036716d4575818c1bf0abf4e7938cc515aedb))
+
 ## [4.0.2](https://github.com/MGNetworking/swarm-iam-platform/compare/v4.0.1...v4.0.2) (2026-05-11)
 
 
