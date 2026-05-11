@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Overlay dev local (WSL2 + k3s)
+# StorageClass : local-path (défaut k3s, identique à linux-server)
+
+resources:
+  - ../../base
+
+patches:
+  - path: patches/postgresql-storage.yaml
+  - path: patches/redis-storage.yaml
+  - path: patches/keycloak-hostname.yaml
+  - path: patches/keycloak-ingress.yaml
+  - path: patches/keycloak-args.yaml

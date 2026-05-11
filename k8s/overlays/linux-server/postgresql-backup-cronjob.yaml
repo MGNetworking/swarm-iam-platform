@@ -1,0 +1,69 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgresql-backup
+  namespace: iam-system
+  labels:
+    app.kubernetes.io/name: postgresql-backup
+    app.kubernetes.io/component: backup
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: postgresql-backup
+            app.kubernetes.io/component: backup
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsUser: 0
+          containers:
+            - name: backup
+              image: postgres:17-alpine
+              env:
+                - name: POSTGRES_USER
+                  valueFrom:
+                    configMapKeyRef:
+                      name: postgresql-config
+                      key: USER_BD
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: pg-password
+                      key: password
+                - name: KEEP_DAYS
+                  value: "30"
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  DATE=$(date +%Y-%m-%d)
+                  OUT="/backups/CLUSTER-${DATE}.sql.gz"
+                  if [ -f "$OUT" ]; then
+                    echo "Backup déjà présent: $OUT"
+                    exit 0
+                  fi
+                  TMP="${OUT}.tmp"
+                  PGPASSWORD="$POSTGRES_PASSWORD" pg_dumpall \
+                    -h postgresql \
+                    -U "$POSTGRES_USER" \
+                    --no-roles --clean \
+                    | gzip -9 > "$TMP"
+                  [ -s "$TMP" ] || { echo "ERREUR: dump vide"; rm -f "$TMP"; exit 1; }
+                  mv "$TMP" "$OUT"
+                  echo "OK: $OUT ($(du -sh "$OUT" | cut -f1))"
+                  find /backups -name 'CLUSTER-*.sql.gz' -mtime +"$KEEP_DAYS" -delete
+                  echo "Purge terminée (> $KEEP_DAYS jours)"
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+          volumes:
+            - name: backups
+              hostPath:
+                path: /var/backups/postgresql
+                type: DirectoryOrCreate

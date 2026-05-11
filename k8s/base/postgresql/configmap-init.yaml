@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-init
+  namespace: iam-system
+  labels:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/component: database
+data:
+  # Ajouter ici des fichiers .sql ou .sh exécutés au premier démarrage.
+  # La création de la DB et de l'utilisateur est gérée par les variables
+  # d'environnement POSTGRES_DB / POSTGRES_USER du conteneur PostgreSQL.

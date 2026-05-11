@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-config
+  namespace: iam-system
+data:
+  # Remplacer par le vrai hostname de votre VPS
+  KEYCLOAK_HOSTNAME: keycloak.example.com

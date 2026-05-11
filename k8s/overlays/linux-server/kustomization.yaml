@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Overlay VPS bare metal (Hetzner / OVH / tout Linux avec k3s)
+# StorageClass par défaut k3s : local-path
+
+resources:
+  - ../../base
+  - postgresql-backup-cronjob.yaml
+
+patches:
+  - path: patches/postgresql-storage.yaml
+  - path: patches/redis-storage.yaml
+  - path: patches/keycloak-hostname.yaml
+  - path: patches/keycloak-ingress.yaml

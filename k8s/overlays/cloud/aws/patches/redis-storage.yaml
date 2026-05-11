@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data
+  namespace: iam-system
+spec:
+  storageClassName: gp2
