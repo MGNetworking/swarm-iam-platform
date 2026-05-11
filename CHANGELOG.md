@@ -1,5 +1,27 @@
 # Changelog
 
+## [4.0.1](https://github.com/MGNetworking/swarm-iam-platform/compare/v4.0.0...v4.0.1) (2026-05-11)
+
+
+### Miscellaneous
+
+* **project:** add MIT license, CODEOWNERS and wiki auto-sync ([c8e0c51](https://github.com/MGNetworking/swarm-iam-platform/commit/c8e0c51fd52d3b9e0cc72abe1c9aebd67841eb6c))
+* **project:** add MIT license, CODEOWNERS and wiki sync ([#98](https://github.com/MGNetworking/swarm-iam-platform/issues/98)) ([c8e0c51](https://github.com/MGNetworking/swarm-iam-platform/commit/c8e0c51fd52d3b9e0cc72abe1c9aebd67841eb6c))
+
+## [4.0.0](https://github.com/MGNetworking/swarm-iam-platform/compare/v3.0.1...v4.0.0) (2026-05-11)
+
+
+### Features
+
+* **k8s:** migrate platform from Docker Swarm to k3s with Kustomize ([935b83e](https://github.com/MGNetworking/swarm-iam-platform/commit/935b83e4e3c6258b2b204f98b72de6607d38342c))
+* **k8s:** migrate platform to k3s with Kustomize and restructure docs ([#93](https://github.com/MGNetworking/swarm-iam-platform/issues/93)) ([#94](https://github.com/MGNetworking/swarm-iam-platform/issues/94)) ([935b83e](https://github.com/MGNetworking/swarm-iam-platform/commit/935b83e4e3c6258b2b204f98b72de6607d38342c))
+
+
+### Bug Fixes
+
+* **ci:** upgrade release-please-action to v5 (Node.js 24) ([bef3ee9](https://github.com/MGNetworking/swarm-iam-platform/commit/bef3ee9f06b7738df860bd520807dcf493b73bb1))
+* **ci:** upgrade release-please-action to v5 (Node.js 24) ([d5a1db8](https://github.com/MGNetworking/swarm-iam-platform/commit/d5a1db8255b72f18049098f0e7b1371e9e19f772))
+
 ## [3.0.1](https://github.com/MGNetworking/swarm-iam-platform/compare/v3.0.0...v3.0.1) (2026-03-30)
 
 
