@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.0.2](https://github.com/MGNetworking/swarm-iam-platform/compare/v4.0.1...v4.0.2) (2026-05-11)
+
+
+### Bug Fixes
+
+* **ci:** add workflow_dispatch to wiki-sync for manual trigger ([2664837](https://github.com/MGNetworking/swarm-iam-platform/commit/2664837e72da65badcb76f5388d2864504c67b51))
+
 ## [4.0.1](https://github.com/MGNetworking/swarm-iam-platform/compare/v4.0.0...v4.0.1) (2026-05-11)
 
 
