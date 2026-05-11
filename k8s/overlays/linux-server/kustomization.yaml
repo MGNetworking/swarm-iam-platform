@@ -4,8 +4,9 @@ kind: Kustomization
 # Overlay VPS bare metal (Hetzner / OVH / tout Linux avec k3s)
 # StorageClass par défaut k3s : local-path
 
-bases:
+resources:
   - ../../base
+  - postgresql-backup-cronjob.yaml
 
 patches:
   - path: patches/postgresql-storage.yaml
