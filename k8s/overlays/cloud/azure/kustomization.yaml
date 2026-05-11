@@ -4,7 +4,7 @@ kind: Kustomization
 # Overlay Azure Kubernetes Service (AKS)
 # StorageClass : managed-csi (Azure Disk)
 
-bases:
+resources:
   - ../../../base
 
 patches:

@@ -4,7 +4,7 @@ kind: Kustomization
 # Overlay Elastic Kubernetes Service (EKS)
 # StorageClass : gp2 (EBS General Purpose SSD)
 
-bases:
+resources:
   - ../../../base
 
 patches:

@@ -2,6 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: keycloak
+  namespace: iam-system
 spec:
   rules:
     # Remplacer par le vrai hostname de votre VPS

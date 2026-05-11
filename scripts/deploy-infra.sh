@@ -178,7 +178,7 @@ chmod +x "$ENSURE_INFRA_SCRIPT" || true
 log "=== ENSURE BACKUP DIRS ==="
 [ -f "$ENSURE_BACKUP_SCRIPT" ] || die "Script introuvable: $ENSURE_BACKUP_SCRIPT"
 chmod +x "$ENSURE_BACKUP_SCRIPT" || true
-"$ENSURE_BACKUP_SCRIPT"
+"$ENSURE_BACKUP_SCRIPT" --env "$ENV_NAME"
 
 # 3) Application des manifests Kustomize
 log "=== KUBECTL APPLY -K $K8S_OVERLAY ==="
