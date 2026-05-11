@@ -29,6 +29,9 @@ jobs:
           # Copier tout le contenu de docs/ dans le wiki
           cp -r docs/. /tmp/wiki/
 
+          # Exclure le cours k8s (doc personnelle, hors scope wiki)
+          rm -rf /tmp/wiki/k8s-course
+
           # La page d'accueil du wiki = README du projet
           cp README.md /tmp/wiki/Home.md
 
