@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.1.0](https://github.com/MGNetworking/swarm-iam-platform/compare/v4.0.3...v4.1.0) (2026-05-12)
+
+
+### Features
+
+* **backup:** add rclone off-site backup to NAS and auto-create K8s secrets ([#107](https://github.com/MGNetworking/swarm-iam-platform/issues/107)) ([a7d1ef1](https://github.com/MGNetworking/swarm-iam-platform/commit/a7d1ef1a9fdd6d6b9547a5dbaf65851d732e2ea9))
+
 ## [4.0.3](https://github.com/MGNetworking/swarm-iam-platform/compare/v4.0.2...v4.0.3) (2026-05-11)
 
 
