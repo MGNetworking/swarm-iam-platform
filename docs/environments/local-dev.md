@@ -13,7 +13,7 @@ Guide complet de la mise en service à la suppression, sans toucher à la config
   - [Ajouter dans WSL2](#ajouter-dans-wsl2)
   - [Ajouter dans Windows](#ajouter-dans-windows)
 - [3 — Premier lancement](#3-premier-lancement)
-  - [Créer les secrets Kubernetes](#créer-les-secrets-kubernetes)
+  - [Configurer les secrets (Infisical + ESO)](#configurer-les-secrets-infisical--eso)
   - [Déployer la stack](#déployer-la-stack)
   - [Surveiller le démarrage](#surveiller-le-démarrage)
 - [Logs par service](#logs-par-service)
@@ -93,37 +93,52 @@ Select-String "keycloak" "C:\Windows\System32\drivers\etc\hosts"
 
 ## 3 — Premier lancement
 
-### Créer les secrets Kubernetes
+### Configurer les secrets (Infisical + ESO)
 
-Les secrets ne sont **jamais** dans le dépôt. À créer une seule fois (ou après chaque reset complet).
+Les secrets sont gérés via **Infisical + ESO**, comme pour les autres environnements.
+Voir [docs/reference/secrets-management.md](../reference/secrets-management.md) pour la doc complète.
+
+**1. Prérequis Infisical**
+
+Dans le projet `swarm-iam-platform` sur [app.infisical.com](https://app.infisical.com),
+créer l'environnement `dev` et y ajouter les secrets :
+
+| Clé Infisical | Valeur suggérée pour les tests |
+|---|---|
+| `PG_PASSWORD` | `dev-pg-password` |
+| `REDIS_PASSWORD` | `dev-redis-password` |
+| `KEYCLOAK_ADMIN_PASSWORD` | `dev-admin-password` |
+
+**2. Renseigner les credentials dans `.env`**
 
 ```bash
-sudo kubectl create namespace iam-system
-
-sudo kubectl create secret generic pg-password \
-  --from-literal=password='VOTRE_MOT_DE_PASSE_PG' -n iam-system
-
-sudo kubectl create secret generic redis-password \
-  --from-literal=password='VOTRE_MOT_DE_PASSE_REDIS' -n iam-system
-
-sudo kubectl create secret generic keycloak-admin \
-  --from-literal=password='VOTRE_MOT_DE_PASSE_ADMIN_KC' -n iam-system
+vi environments/local-dev/.env
 ```
-
-Vérifier que les 3 secrets sont présents avant de continuer :
 
 ```bash
-sudo kubectl get secrets -n iam-system
+INFISICAL_CLIENT_ID=<CLIENT_ID_DU_MACHINE_IDENTITY>
+INFISICAL_CLIENT_SECRET=<CLIENT_SECRET_DU_MACHINE_IDENTITY>
 ```
 
-Résultat attendu :
+**3. Installer ESO sur le cluster local**
 
+```bash
+./scripts/setup-eso.sh
 ```
-NAME             TYPE     DATA   AGE
-keycloak-admin   Opaque   1      Xs
-pg-password      Opaque   1      Xs
-redis-password   Opaque   1      Xs
+
+**4. Créer le secret bootstrap Infisical**
+
+```bash
+./secrets/setup-infisical.sh --env local-dev
 ```
+
+> À partir de ce point, les secrets `pg-password`, `redis-password` et `keycloak-admin`
+> sont créés automatiquement par ESO au moment du déploiement.
+
+> **Alternative rapide pour tester sans Infisical :** créer les secrets manuellement avec
+> `kubectl create secret generic pg-password --from-literal=password='...' -n iam-system`
+> (et idem pour redis-password et keycloak-admin). À utiliser uniquement pour du
+> prototypage local — pas pour un environnement partagé.
 
 ### Déployer la stack
 

@@ -6,6 +6,7 @@ kind: Kustomization
 
 resources:
   - ../../base
+  - cluster-secret-store.yaml
 
 patches:
   - path: patches/postgresql-storage.yaml

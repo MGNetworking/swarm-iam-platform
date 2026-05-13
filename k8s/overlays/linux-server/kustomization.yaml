@@ -7,6 +7,8 @@ kind: Kustomization
 resources:
   - ../../base
   - postgresql-backup-cronjob.yaml
+  - cluster-secret-store.yaml
+  - external-secrets
 
 patches:
   - path: patches/postgresql-storage.yaml

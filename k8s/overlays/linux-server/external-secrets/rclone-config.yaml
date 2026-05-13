@@ -1,0 +1,22 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: rclone-config
+  namespace: iam-system
+  labels:
+    app.kubernetes.io/name: rclone-config
+    app.kubernetes.io/component: secret
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: infisical-store
+    kind: ClusterSecretStore
+  target:
+    name: rclone-config
+    creationPolicy: Owner
+  data:
+    # Stocker le contenu complet du fichier rclone.conf dans Infisical
+    # sous la clé RCLONE_CONF (type sftp, host, port, user, key_file, known_hosts_file)
+    - secretKey: rclone.conf
+      remoteRef:
+        key: RCLONE_CONF

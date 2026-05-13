@@ -14,7 +14,7 @@ avec k3s en mode single-node.
 - [2 — Installer k3s sur le serveur](#2-installer-k3s-sur-le-serveur)
 - [3 — Configurer kubectl en local](#3-configurer-kubectl-en-local)
 - [4 — Configurer le hostname](#4-configurer-le-hostname)
-- [5 — Créer les secrets Kubernetes](#5-créer-les-secrets-kubernetes)
+- [5 — Configurer les secrets (Infisical + ESO)](#5-configurer-les-secrets-infisical--eso)
 - [6 — Déployer](#6-déployer)
 - [7 — Accès](#7-accès)
 - [Opérations courantes](#opérations-courantes)
@@ -142,37 +142,61 @@ vi k8s/overlays/linux-server/patches/keycloak-ingress.yaml
 
 ---
 
-## 5 — Créer les secrets Kubernetes
+## 5 — Configurer les secrets (Infisical + ESO)
 
-Les secrets ne sont **jamais** dans le dépôt. À créer une seule fois sur le cluster.
+Les secrets applicatifs sont gérés via **Infisical + ESO** — jamais dans des fichiers locaux.
+Voir [docs/reference/secrets-management.md](../reference/secrets-management.md) pour la doc complète.
+
+### 5.1 — Prérequis Infisical (une seule fois, hors cluster)
+
+1. Créer un compte sur [app.infisical.com](https://app.infisical.com) (tier gratuit suffisant)
+2. Créer un projet nommé `swarm-iam-platform`
+3. Dans ce projet, créer l'environnement `prod`
+4. Ajouter les secrets suivants dans l'environnement `prod` :
+
+| Clé Infisical | Valeur |
+|---|---|
+| `PG_PASSWORD` | Mot de passe PostgreSQL |
+| `REDIS_PASSWORD` | Mot de passe Redis |
+| `KEYCLOAK_ADMIN_PASSWORD` | Mot de passe admin Keycloak |
+| `RCLONE_CONF` | Contenu complet du fichier `rclone.conf` *(optionnel — backup off-site)* |
+| `RCLONE_SSH_KEY` | Contenu de la clé privée SSH `~/.ssh/id_ed25519_nas_backup` *(optionnel)* |
+| `RCLONE_KNOWN_HOSTS` | Sortie de `ssh-keyscan -H -p <SFTP_PORT> <SFTP_HOST>` *(optionnel)* |
+
+5. Créer un **Machine Identity** (Universal Auth) avec accès en lecture au projet
+6. Noter le `Client ID` et le `Client Secret` générés
+
+### 5.2 — Renseigner les credentials dans `.env`
 
 ```bash
-kubectl create namespace iam-system
-
-kubectl create secret generic pg-password \
-  --from-literal=password='VOTRE_MOT_DE_PASSE_PG' -n iam-system
-
-kubectl create secret generic redis-password \
-  --from-literal=password='VOTRE_MOT_DE_PASSE_REDIS' -n iam-system
-
-kubectl create secret generic keycloak-admin \
-  --from-literal=password='VOTRE_MOT_DE_PASSE_ADMIN_KC' -n iam-system
+vi environments/linux-server/.env
 ```
-
-Vérifier que les 3 secrets sont présents :
 
 ```bash
-kubectl get secrets -n iam-system
+INFISICAL_CLIENT_ID=<CLIENT_ID_DU_MACHINE_IDENTITY>
+INFISICAL_CLIENT_SECRET=<CLIENT_SECRET_DU_MACHINE_IDENTITY>
 ```
 
-Résultat attendu :
+### 5.3 — Installer ESO sur le cluster (une seule fois)
 
+```bash
+./scripts/setup-eso.sh
 ```
-NAME             TYPE     DATA   AGE
-keycloak-admin   Opaque   1      Xs
-pg-password      Opaque   1      Xs
-redis-password   Opaque   1      Xs
+
+ESO est installé dans le namespace `external-secrets`. Cette étape est idempotente.
+
+### 5.4 — Créer le secret bootstrap Infisical
+
+```bash
+./secrets/setup-infisical.sh --env linux-server
 ```
+
+Ce script crée un seul secret K8s (`infisical-credentials` dans `external-secrets`)
+contenant les credentials du Machine Identity. ESO utilise ce secret pour s'authentifier
+auprès d'Infisical et synchroniser automatiquement tous les autres secrets.
+
+> À partir de ce point, tous les Kubernetes Secrets (`pg-password`, `redis-password`,
+> `keycloak-admin`) sont créés **automatiquement** par ESO au moment du déploiement.
 
 ---
 

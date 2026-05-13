@@ -47,15 +47,17 @@ Ces deux familles ne s'appellent pas entre elles. Chacune a son périmètre :
 
 | Script                     | Ce qu'il fait                          | Quand l'utiliser                 | Dangereux ?                  |
 | -------------------------- | -------------------------------------- | -------------------------------- | ---------------------------- |
-| `ensure-infra.sh`          | Vérifie k3s + cluster + namespace      | Avant tout déploiement           | Non                          |
-| `deploy-infra.sh`          | Déploie ou met à jour toute la stack   | Premier déploiement, mise à jour | Non (idempotent)             |
-| `restart-infra.sh`         | Redémarre les pods un par un           | Après un changement de secret    | Non (progressif)             |
-| `reset-infra.sh`           | Supprime tout le namespace             | Repartir de zéro                 | **OUI — irréversible**       |
-| `ensure-backup-dirs.sh`    | Crée les dossiers de backup sur l'hôte | Avant le premier déploiement     | Non                          |
-| `backup-manual.sh`         | Dump interactif d'une base             | Avant une migration risquée      | Non                          |
-| `restore-daily-cluster.sh` | Restaure depuis backup daily           | Restauration complète            | **Oui** — écrase les données |
-| `restore-manual-db.sh`     | Restaure une base complète             | Restauration ciblée              | **Oui** — écrase la base     |
-| `restore-manual-schema.sh` | Restaure la structure uniquement       | Corriger une migration           | **Oui** — perte des données  |
+| `ensure-infra.sh`               | Vérifie k3s + cluster + namespace           | Avant tout déploiement           | Non                          |
+| `deploy-infra.sh`               | Déploie ou met à jour toute la stack        | Premier déploiement, mise à jour | Non (idempotent)             |
+| `setup-eso.sh`                  | Installe External Secrets Operator          | Une seule fois avant deploy      | Non (idempotent)             |
+| `secrets/setup-infisical.sh`    | Crée le secret credentials Infisical dans K8s | Après setup-eso, avant deploy  | Non (idempotent)             |
+| `restart-infra.sh`              | Redémarre les pods un par un                | Après un changement de secret    | Non (progressif)             |
+| `reset-infra.sh`                | Supprime tout le namespace                  | Repartir de zéro                 | **OUI — irréversible**       |
+| `ensure-backup-dirs.sh`         | Crée les dossiers de backup sur l'hôte      | Avant le premier déploiement     | Non                          |
+| `backup-manual.sh`              | Dump interactif d'une base                  | Avant une migration risquée      | Non                          |
+| `restore-daily-cluster.sh`      | Restaure depuis backup daily                | Restauration complète            | **Oui** — écrase les données |
+| `restore-manual-db.sh`          | Restaure une base complète                  | Restauration ciblée              | **Oui** — écrase la base     |
+| `restore-manual-schema.sh`      | Restaure la structure uniquement            | Corriger une migration           | **Oui** — perte des données  |
 
 ---
 

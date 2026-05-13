@@ -4,9 +4,5 @@ kind: Kustomization
 namespace: iam-system
 
 resources:
-  - namespace.yaml
-  - traefik
-  - postgresql
-  - redis
-  - keycloak
-  - external-secrets
+  - rclone-config.yaml
+  - rclone-nas-key.yaml

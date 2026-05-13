@@ -13,7 +13,7 @@ Déploiement de la stack IAM sur Azure Kubernetes Service (AKS).
 - [2 — Récupérer l'IP publique du Load Balancer](#2-récupérer-lip-publique-du-load-balancer)
 - [3 — Configurer le DNS](#3-configurer-le-dns)
 - [4 — Configurer le hostname](#4-configurer-le-hostname)
-- [5 — Créer les secrets Kubernetes](#5-créer-les-secrets-kubernetes)
+- [5 — Configurer les secrets (Infisical + ESO)](#5-configurer-les-secrets-infisical--eso)
 - [6 — Déployer](#6-déployer)
 - [7 — Accès](#7-accès)
 - [StorageClass Azure](#storageclass-azure)
@@ -149,26 +149,52 @@ EOF
 
 ---
 
-## 5 — Créer les secrets Kubernetes
+## 5 — Configurer les secrets (Infisical + ESO)
+
+Les secrets applicatifs sont gérés via **Infisical + ESO** — jamais dans des fichiers locaux.
+Voir [docs/reference/secrets-management.md](../reference/secrets-management.md) pour la doc complète.
+
+### 5.1 — Prérequis Infisical (une seule fois, hors cluster)
+
+1. Créer un compte sur [app.infisical.com](https://app.infisical.com) (tier gratuit suffisant)
+2. Créer un projet nommé `swarm-iam-platform` (ou réutiliser le projet existant)
+3. Dans ce projet, créer l'environnement `prod-azure`
+4. Ajouter les secrets suivants dans l'environnement `prod-azure` :
+
+| Clé Infisical | Valeur |
+|---|---|
+| `PG_PASSWORD` | Mot de passe PostgreSQL |
+| `REDIS_PASSWORD` | Mot de passe Redis |
+| `KEYCLOAK_ADMIN_PASSWORD` | Mot de passe admin Keycloak |
+
+5. Créer un **Machine Identity** (Universal Auth) avec accès en lecture au projet
+6. Noter le `Client ID` et le `Client Secret` générés
+
+### 5.2 — Renseigner les credentials dans `.env`
 
 ```bash
-kubectl create namespace iam-system
-
-kubectl create secret generic pg-password \
-  --from-literal=password='VOTRE_MOT_DE_PASSE_PG' -n iam-system
-
-kubectl create secret generic redis-password \
-  --from-literal=password='VOTRE_MOT_DE_PASSE_REDIS' -n iam-system
-
-kubectl create secret generic keycloak-admin \
-  --from-literal=password='VOTRE_MOT_DE_PASSE_ADMIN_KC' -n iam-system
+vi environments/cloud/azure/.env
 ```
-
-Vérifier :
 
 ```bash
-kubectl get secrets -n iam-system
+INFISICAL_CLIENT_ID=<CLIENT_ID_DU_MACHINE_IDENTITY>
+INFISICAL_CLIENT_SECRET=<CLIENT_SECRET_DU_MACHINE_IDENTITY>
 ```
+
+### 5.3 — Installer ESO sur le cluster (une seule fois)
+
+```bash
+./scripts/setup-eso.sh
+```
+
+### 5.4 — Créer le secret bootstrap Infisical
+
+```bash
+./secrets/setup-infisical.sh --env cloud/azure
+```
+
+> À partir de ce point, tous les Kubernetes Secrets sont créés **automatiquement**
+> par ESO au moment du déploiement (étape 6).
 
 ---
 

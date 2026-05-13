@@ -4,9 +4,6 @@ kind: Kustomization
 namespace: iam-system
 
 resources:
-  - namespace.yaml
-  - traefik
-  - postgresql
-  - redis
-  - keycloak
-  - external-secrets
+  - pg-password.yaml
+  - redis-password.yaml
+  - keycloak-admin.yaml

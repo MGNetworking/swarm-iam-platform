@@ -1,0 +1,25 @@
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: rclone-nas-key
+  namespace: iam-system
+  labels:
+    app.kubernetes.io/name: rclone-nas-key
+    app.kubernetes.io/component: secret
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: infisical-store
+    kind: ClusterSecretStore
+  target:
+    name: rclone-nas-key
+    creationPolicy: Owner
+  data:
+    # Clé privée SSH du compte backup (contenu du fichier id_ed25519_nas_backup)
+    - secretKey: key
+      remoteRef:
+        key: RCLONE_SSH_KEY
+    # known_hosts du serveur distant (récupéré via ssh-keyscan)
+    - secretKey: known_hosts
+      remoteRef:
+        key: RCLONE_KNOWN_HOSTS
